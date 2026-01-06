@@ -1,48 +1,57 @@
 
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
+#include <sys/types.h>
 
-// 1. Ler e validar argumentos da linha de comando
-//    - Verificar quantidade de argumentos
-//    - Converter PID de string para inteiro
-//    - Validar se o PID parece válido
-
-// 2. Definir a mesma convenção de bits do servidor
-//    - SIGUSR1 = 0
-//    - SIGUSR2 = 1
-//    Essa decisão precisa ser idêntica no server
-
-// 3. Criar função para enviar um bit
-//    - Recebe PID do servidor
-//    - Recebe valor do bit (0 ou 1)
-//    - Envia o sinal correspondente usando kill
-
-// 4. Criar função para enviar um caractere
-//    - Percorrer os 8 bits do caractere
-//    - Enviar cada bit na ordem correta
-//    - Inserir um pequeno delay entre sinais (usleep)
-
-// 5. Decidir a ordem dos bits
-//    - Do bit mais significativo para o menos?
-//    - Ou o contrário?
-//    Importante: servidor precisa reconstruir na mesma ordem
-
-// 6. Criar função para enviar a string completa
-//    - Iterar sobre cada caractere da string
-//    - Enviar caractere por caractere
-//    - Ao final, enviar o caractere '\0' para indicar fim
-
-// 7. Lidar com possíveis erros de kill
-//    - PID inválido
-//    - Servidor inexistente
-//    - Permissão negada
-
-int main()
+void send_bit(int bit, int pid)
 {
-    printf("Hello Client \n");
+    if (bit == 0)
+        kill(pid, SIGUSR1);
+    else
+        kill(pid, SIGUSR2);
+}
 
-    // kill(134057, SIGUSR1);
-    kill(135563, SIGUSR2);
-    
-    return 0;
+void send_char(int pid, char c)
+{
+    int i;
+    int bit;
+
+    i = 7;
+    while (i >= 0)
+    {
+        bit = (c >> i) & 1;
+        send_bit(bit, pid);
+        usleep(500);
+        i--;
+    }
+}
+
+void send_string(int pid, char *string)
+{
+    int i;
+
+    i = 0;
+    while (string[i])
+    {
+        send_char(pid, string[i]);
+        i++;
+    }
+    send_char(pid, '\0');
+}
+
+int main(int argc, char **argv)
+{
+    int pid;
+
+    if(argc != 3)
+    {
+        write(1, "Uso: ./client <PID> <mensagem>\n", 32);
+        return (1);
+    }    
+
+    pid = atoi(argv[1]);
+    send_string(pid, argv[2]);
+    return (0);
 }
