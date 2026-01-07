@@ -1,57 +1,72 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   client.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ramis <ramis@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/06 21:53:08 by ramis             #+#    #+#             */
+/*   Updated: 2026/01/06 22:28:00 by ramis            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/types.h>
+#include "minitalk.h"
 
-void send_bit(int bit, int pid)
+volatile	sig_atomic_t g_ack = 0;
+
+void	handle_ack(int sig)
 {
-    if (bit == 0)
-        kill(pid, SIGUSR1);
-    else
-        kill(pid, SIGUSR2);
+	(void)sig;
+	g_ack = 1;
 }
 
-void send_char(int pid, char c)
+void	send_bit(int bit, int pid)
 {
-    int i;
-    int bit;
-
-    i = 7;
-    while (i >= 0)
-    {
-        bit = (c >> i) & 1;
-        send_bit(bit, pid);
-        usleep(500);
-        i--;
-    }
+	g_ack = 0;
+	if (bit == 0)
+		kill(pid, SIGUSR1);
+	else
+		kill(pid, SIGUSR2);
+	while (!g_ack)
+		pause();
 }
 
-void send_string(int pid, char *string)
+void	send_char(int pid, char c)
 {
-    int i;
+	int	i;
 
-    i = 0;
-    while (string[i])
-    {
-        send_char(pid, string[i]);
-        i++;
-    }
-    send_char(pid, '\0');
+	i = 7;
+	while (i >= 0)
+	{
+		send_bit((c >> i) & 1, pid);
+		i--;
+	}
 }
 
-int main(int argc, char **argv)
+void	send_string(int pid, char *string)
 {
-    int pid;
+	int	i;
 
-    if(argc != 3)
-    {
-        write(1, "Uso: ./client <PID> <mensagem>\n", 32);
-        return (1);
-    }    
+	i = 0;
+	while (string[i])
+	{
+		send_char(pid, string[i]);
+		i++;
+	}
+	send_char(pid, '\0');
+}
 
-    pid = atoi(argv[1]);
-    send_string(pid, argv[2]);
-    return (0);
+int	main(int argc, char **argv)
+{
+	int	pid;
+
+	if (argc != 3)
+	{
+		write(1, "Uso: ./client <PID> <mensagem>\n", 32);
+		return (1);
+	}
+	signal(SIGUSR1, handle_ack);
+	pid = atoi(argv[1]);
+	send_string(pid, argv[2]);
+	return (0);
 }
