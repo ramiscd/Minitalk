@@ -6,13 +6,13 @@
 /*   By: ramis <ramis@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/06 21:53:08 by ramis             #+#    #+#             */
-/*   Updated: 2026/01/06 22:28:00 by ramis            ###   ########.fr       */
+/*   Updated: 2026/01/06 23:29:30 by ramis            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minitalk.h"
 
-volatile	sig_atomic_t g_ack = 0;
+volatile sig_atomic_t	g_ack = 0;
 
 void	handle_ack(int sig)
 {
